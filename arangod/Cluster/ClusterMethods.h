@@ -123,6 +123,13 @@ futures::Future<OperationResult> countOnCoordinator(transaction::Methods& trx,
                                                     arangodb::transaction::MethodsApi api);
 
 ////////////////////////////////////////////////////////////////////////////////
+/// @brief gets the metrics from DBServers
+////////////////////////////////////////////////////////////////////////////////
+
+futures::Future<std::vector<std::string>> metricsOnCoordinator(NetworkFeature& network,
+                                                               ClusterFeature& cluster);
+
+////////////////////////////////////////////////////////////////////////////////
 /// @brief gets the selectivity estimates from DBservers
 ////////////////////////////////////////////////////////////////////////////////
 

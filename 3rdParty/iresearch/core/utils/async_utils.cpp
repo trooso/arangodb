@@ -331,20 +331,7 @@ void thread_pool::worker_impl(std::unique_lock<std::mutex>& lock,
 
       if (top.at <= clock_t::now()) {
         func_t fn;
-
-        try {
-          // std::function<...> move ctor isn't marked "noexcept" until c++20
-          fn = std::move(top.fn);
-        } catch (const std::bad_alloc&) {
-          fprintf(stderr, "Failed to pop task from queue, skipping it");
-          queue_.pop();
-          continue;
-        } catch (...) {
-          IR_FRMT_WARN("Failed to pop task from queue, skipping it");
-          queue_.pop();
-          continue;
-        }
-
+        fn.swap(const_cast<std::function<void()>&>(top.fn));
         queue_.pop();
         ++active_;
 
@@ -366,6 +353,9 @@ void thread_pool::worker_impl(std::unique_lock<std::mutex>& lock,
 
           try {
             fn();
+            func_t fn;
+            fn.swap(const_cast<std::function<void()>&>(top.fn));
+            fn = []{};
           } catch (const std::bad_alloc&) {
             fprintf(stderr, "Failed to allocate memory while executing task");
           } catch (const std::exception& e) {

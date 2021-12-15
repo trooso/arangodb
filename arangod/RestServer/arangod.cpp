@@ -95,6 +95,7 @@
 #include "RestServer/LockfileFeature.h"
 #include "RestServer/LogBufferFeature.h"
 #include "RestServer/MaxMapCountFeature.h"
+#include "Metrics/ClusterMetricsFeature.h"
 #include "Metrics/MetricsFeature.h"
 #include "RestServer/QueryRegistryFeature.h"
 #include "RestServer/RestartAction.h"
@@ -184,7 +185,8 @@ static int runServer(int argc, char** argv, ArangoGlobalContext& context) {
     server.addFeature<V8FeaturePhase>();
 
     // Adding the features
-    server.addFeature<arangodb::metrics::MetricsFeature>();
+    server.addFeature<metrics::MetricsFeature>();
+    server.addFeature<metrics::ClusterMetricsFeature>();
     server.addFeature<ActionFeature>();
     server.addFeature<AgencyFeature>();
     server.addFeature<AqlFeature>();

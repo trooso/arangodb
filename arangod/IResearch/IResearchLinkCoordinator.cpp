@@ -27,18 +27,17 @@
 #include <velocypack/Builder.h>
 #include <velocypack/Slice.h>
 
+#include <memory>
+
 #include "Basics/StringUtils.h"
-#include "Cluster/ClusterInfo.h"
 #include "ClusterEngine/ClusterEngine.h"
 #include "IResearchCommon.h"
 #include "IResearchFeature.h"
 #include "IResearchLinkHelper.h"
-#include "IResearchViewCoordinator.h"
 #include "Indexes/IndexFactory.h"
 #include "Logger/Logger.h"
 #include "RocksDBEngine/RocksDBIndex.h"
 #include "StorageEngine/EngineSelectorFeature.h"
-#include "VelocyPackHelper.h"
 #include "VocBase/LogicalCollection.h"
 
 namespace {
@@ -65,8 +64,7 @@ ClusterEngineType getEngineType(application_features::ApplicationServer& server)
 
 }  // namespace
 
-namespace arangodb {
-namespace iresearch {
+namespace arangodb::iresearch {
 
 IResearchLinkCoordinator::IResearchLinkCoordinator(IndexId id, LogicalCollection& collection)
     : arangodb::ClusterIndex(id, collection,
@@ -124,8 +122,7 @@ bool IResearchLinkCoordinator::IndexFactory::equal(velocypack::Slice lhs,
 std::shared_ptr<Index> IResearchLinkCoordinator::IndexFactory::instantiate(
     LogicalCollection& collection, VPackSlice definition, IndexId id,
     bool /*isClusterConstructor*/) const {
-  auto link = std::shared_ptr<IResearchLinkCoordinator>(
-      new IResearchLinkCoordinator(id, collection));
+  auto link = std::make_shared<IResearchLinkCoordinator>(id, collection);
   auto res = link->init(definition);
 
   if (!res.ok()) {
@@ -141,16 +138,13 @@ Result IResearchLinkCoordinator::IndexFactory::normalize(velocypack::Builder& no
                                                          TRI_vocbase_t const& vocbase) const {
   // no attribute set in a definition -> old version
   constexpr LinkVersion defaultVersion = LinkVersion::MIN;
-
   return IResearchLinkHelper::normalize(normalized, definition, isCreation,
                                         vocbase, defaultVersion);
 }
 
 std::shared_ptr<IResearchLinkCoordinator::IndexFactory> IResearchLinkCoordinator::createFactory(
     application_features::ApplicationServer& server) {
-  return std::shared_ptr<IResearchLinkCoordinator::IndexFactory>(
-      new IResearchLinkCoordinator::IndexFactory(server));
+  return std::make_shared<IResearchLinkCoordinator::IndexFactory>(server);
 }
 
-}  // namespace iresearch
-}  // namespace arangodb
+}  // namespace arangodb::iresearch

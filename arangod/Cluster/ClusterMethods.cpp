@@ -1293,6 +1293,38 @@ futures::Future<OperationResult> countOnCoordinator(transaction::Methods& trx,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// @brief gets the metrics from DBServers
+////////////////////////////////////////////////////////////////////////////////
+
+futures::Future<std::vector<std::string>> metricsOnCoordinator(NetworkFeature& network,
+                                                               ClusterFeature& cluster) {
+  auto* pool = network.pool();
+  auto serverIds = cluster.clusterInfo().getCurrentDBServers();
+
+  std::vector<Future<network::Response>> futures;
+  futures.reserve(serverIds.size());
+  for (auto const& id : serverIds) {
+    network::Headers headers;
+    futures.emplace_back(network::sendRequestRetry(pool, "server:" + id, fuerte::RestVerb::Get,
+                                                   "/_admin/metrics", {}, {}, {}));
+  }
+
+  return collectAll(futures).thenValue([](std::vector<Try<network::Response>>&& responses) {
+    std::vector<std::string> metrics;
+    metrics.reserve(responses.size());
+    for (auto& response : responses) {
+      if (!response.hasValue() || response->fail()) {
+        continue;
+      }
+      auto payload = response->slice();
+      TRI_ASSERT(payload.isString());
+      metrics.push_back(payload.copyString());
+    }
+    return metrics;
+  });
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// @brief gets the selectivity estimates from DBservers
 ////////////////////////////////////////////////////////////////////////////////
 
