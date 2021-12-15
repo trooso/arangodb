@@ -1828,6 +1828,14 @@ ExecutionBlockImpl<Executor>::executeWithoutTrace(AqlCallStack const& callStack)
         // For this executor the input of the next run will be injected and it can continue to work.
         LOG_QUERY("0ca35", DEBUG)
             << printTypeInfo() << " ShadowRows moved, continue with next subquery.";
+
+        if (!ctx.stack.hasAllValidCalls()) {
+          // We can only continue if we still have a valid call
+          // on all levels
+          _execState = ExecState::DONE;
+          break;
+        }
+
         if constexpr (std::is_same_v<Executor, SubqueryStartExecutor>) {
           auto currentSubqueryCall = ctx.stack.peek();
           if (currentSubqueryCall.getLimit() == 0 && currentSubqueryCall.hasSoftLimit()) {
